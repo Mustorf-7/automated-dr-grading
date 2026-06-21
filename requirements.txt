@@ -1,8 +1,6 @@
-torch==2.9.1
-torchvision==0.21.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
 streamlit
+# Use the headless version if you are currently using standard opencv-python
 opencv-python-headless
-Pillow
-matplotlib
-numpy
-huggingface-hub
