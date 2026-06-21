@@ -146,7 +146,7 @@ st.set_page_config(page_title="DR Grading System", page_icon="👁️", layout="
 st.title("👁️ Automated Diabetic Retinopathy Grading")
 st.markdown(
     "Upload a **retinal fundus image** to receive an automated DR severity grade "
-    "with Grad-CAM explainability. *For research use only — not a clinical diagnostic tool.*"
+    "with Grad-CAM explainability."
 )
 st.divider()
 
