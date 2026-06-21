@@ -6,10 +6,7 @@ import torchvision.transforms as transforms
 import cv2
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import json
-import io
 from huggingface_hub import hf_hub_download
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -26,6 +23,24 @@ GRADE_INFO = {
     2: {"label": "Moderate",      "color": "#e67e22", "action": "Referral to ophthalmologist recommended"},
     3: {"label": "Severe",        "color": "#e74c3c", "action": "Urgent referral required"},
     4: {"label": "Proliferative", "color": "#8e44ad", "action": "Immediate specialist intervention needed"},
+}
+
+GRADE_REFERENCE = {
+    "Grade": ["0 — No DR", "1 — Mild", "2 — Moderate", "3 — Severe", "4 — Proliferative"],
+    "Key Features": [
+        "No abnormalities detected",
+        "Microaneurysms only",
+        "More than mild, less than severe DR",
+        "Haemorrhages, venous beading, IRMA",
+        "Neovascularisation or vitreous haemorrhage",
+    ],
+    "Recommended Action": [
+        "Routine screening in 12 months",
+        "Follow-up in 6–12 months",
+        "Refer to ophthalmologist",
+        "Urgent referral required",
+        "Immediate specialist intervention",
+    ],
 }
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -70,7 +85,7 @@ def apply_clahe(pil_img):
     img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
     lab = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
     l, a, b = cv2.split(lab)
-    clahe   = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    clahe    = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     enhanced = cv2.merge([clahe.apply(l), a, b])
     return Image.fromarray(cv2.cvtColor(enhanced, cv2.COLOR_LAB2RGB))
 
@@ -144,13 +159,69 @@ st.set_page_config(page_title="DR Grading System", page_icon="👁️", layout="
 
 st.title("👁️ Automated Diabetic Retinopathy Grading")
 st.markdown(
-    "Upload a **retinal fundus image** to receive an automated DR severity grade "
-    "with Grad-CAM explainability."
+    "Upload a **retinal fundus image** to obtain an automated assessment of "
+    "Diabetic Retinopathy progression, supported by Grad-CAM explainability maps. "
 )
 st.divider()
 
+# ── About Section (Addition 2) ─────────────────────────────────────────────
+with st.expander(" About This System"):
+    st.markdown(f"""
+    **Project:** Automated Grading of Diabetic Retinopathy Severity with Image Quality Assessment using Deep Learning
+
+    **Developer:** Mustapha Fetuga — 400L Computer Science Final Year Project
+
+    **Model:** ResNet50 pretrained on ImageNet, fine-tuned on APTOS 2019 Blindness Detection dataset
+
+    **Dataset:** 3,662 retinal fundus images across 5 DR severity grades (APTOS 2019)
+
+    **Performance:** Quadratic Weighted Kappa of {BEST_KAPPA} on validation set (665 images)
+
+    **Pipeline:** Image Quality Assessment → CLAHE Preprocessing → TTA Inference (5 augmentations) → Grad-CAM Explainability
+
+    **GitHub:** https://github.com/Mustorf-7/dr-grading
+
+    **Model Repository:** https://huggingface.co/Mustorf/dr-grading-resnet50
+
+    *This system is intended for research purposes only and should not be used as a substitute for clinical diagnosis by a qualified ophthalmologist.*
+    """)
+
+# ── DR Grade Reference (Addition 5) ───────────────────────────────────────
+with st.expander(" DR Severity Grade Reference"):
+    import pandas as pd
+    st.table(pd.DataFrame(GRADE_REFERENCE))
+
+# ── Sample Images (Addition 1) ─────────────────────────────────────────────
+st.subheader(" Sample Images")
+st.markdown("Don't have a fundus image? Download a sample below to test the app.")
+
+sample_cols = st.columns(5)
+sample_files = [
+    ("Grade 0\nNo DR",          "samples/grade0_sample.png"),
+    ("Grade 1\nMild",           "samples/grade1_sample.png"),
+    ("Grade 2\nModerate",       "samples/grade2_sample.png"),
+    ("Grade 3\nSevere",         "samples/grade3_sample.png"),
+    ("Grade 4\nProliferative",  "samples/grade4_sample.png"),
+]
+
+for col, (label, path) in zip(sample_cols, sample_files):
+    try:
+        with open(path, "rb") as f:
+            col.download_button(
+                label=f"⬇️ {label}",
+                data=f,
+                file_name=path.split("/")[-1],
+                mime="image/png",
+                use_container_width=True
+            )
+    except FileNotFoundError:
+        col.warning(f"{label}\nnot found")
+
+st.divider()
+
+# ── File Upload ────────────────────────────────────────────────────────────
 model    = load_model()
-uploaded = st.file_uploader("Upload Fundus Image", type=["png", "jpg", "jpeg"])
+uploaded = st.file_uploader("📤 Upload Fundus Image", type=["png", "jpg", "jpeg"])
 
 if uploaded:
     pil_img = Image.open(uploaded).convert("RGB")
@@ -160,7 +231,7 @@ if uploaded:
         st.subheader("Original Image")
         st.image(pil_img, use_container_width=True)
 
-    # Quality check
+    # ── Quality Check ──────────────────────────────────────────────────────
     quality_ok, quality_score = check_quality(pil_img)
     st.subheader("Pipeline Steps")
     step1, step2, step3 = st.columns(3)
@@ -168,21 +239,23 @@ if uploaded:
                  delta="Pass" if quality_ok else "Fail")
 
     if not quality_ok:
-        st.error(f"Image rejected: Quality score {quality_score} is below "
-                 f"threshold {THRESHOLD}. Please upload a sharper fundus image.")
+        st.error(
+            f" Image rejected: Quality score {quality_score} is below "
+            f"threshold {THRESHOLD}. Please upload a sharper fundus image."
+        )
         st.stop()
 
-    # CLAHE
+    # ── CLAHE ──────────────────────────────────────────────────────────────
     clahe_img = apply_clahe(pil_img)
     step2.metric("② CLAHE", "Applied", delta="Contrast enhanced")
 
-    # TTA inference
+    # ── TTA Inference ──────────────────────────────────────────────────────
     with st.spinner("Running TTA inference (5 augmentations)..."):
         grade, confidence, all_probs = tta_predict(model, clahe_img)
 
     step3.metric("③ TTA Inference", "Complete", delta="5 augmentations averaged")
 
-    # Result
+    # ── Result ─────────────────────────────────────────────────────────────
     st.divider()
     info = GRADE_INFO[grade]
     st.markdown(f"""
@@ -195,18 +268,25 @@ if uploaded:
             Confidence: <strong>{confidence:.1%}</strong>
         </p>
         <p style="font-size:16px; margin:0">
-             <em>{info["action"]}</em>
+            🏥 <em>{info["action"]}</em>
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Probability bars
+    # ── Addition 3 — Low Confidence Warning ────────────────────────────────
+    if confidence < 0.50:
+        st.warning(
+            f"⚠️ Low confidence prediction ({confidence:.1%}). "
+            f"This case should be reviewed by a qualified ophthalmologist."
+        )
+
+    # ── Probability Distribution ───────────────────────────────────────────
     st.subheader("Grade Probability Distribution")
     prob_cols = st.columns(5)
     for i, (col, prob) in enumerate(zip(prob_cols, all_probs)):
         col.metric(f"Grade {i}", f"{prob:.1%}", delta=GRADE_INFO[i]["label"])
 
-    # Grad-CAM
+    # ── Grad-CAM ───────────────────────────────────────────────────────────
     st.subheader("Grad-CAM Explainability")
     with st.spinner("Generating Grad-CAM heatmap..."):
         cam, overlay = run_gradcam(model, clahe_img, grade)
@@ -220,12 +300,13 @@ if uploaded:
     g3.image(overlay, caption="Overlay", use_container_width=True)
 
     st.caption(
-        "Red regions indicate retinal areas most influential in the model's decision. "
+        "Red regions indicate retinal areas most influential in the model\'s decision. "
         "In DR, these typically correspond to microaneurysms, haemorrhages, or neovascularisation."
     )
 
     st.divider()
     st.caption(
         f"Model: ResNet50 | TTA: 5 augmentations | "
-        f"Best Val Kappa: {BEST_KAPPA} | Dataset: APTOS 2019"
+        f"Best Val Kappa: {BEST_KAPPA} | Dataset: APTOS 2019 | "
+        f"Developer: Mustapha Fetuga"
     )
