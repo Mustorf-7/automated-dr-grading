@@ -165,26 +165,26 @@ st.markdown(
 st.divider()
 
 # ── About Section (Addition 2) ─────────────────────────────────────────────
-with st.expander(" About This System"):
-    st.markdown(f"""
-    **Project:** Automated Grading of Diabetic Retinopathy Severity with Image Quality Assessment using Deep Learning
+# with st.expander(" About This System"):
+#     st.markdown(f"""
+#     **Project:** Automated Grading of Diabetic Retinopathy Severity with Image Quality Assessment using Deep Learning
 
-    **Developer:** Mustapha Fetuga — 400L Computer Science Final Year Project
+#     **Developer:** Mustapha Fetuga — 400L Computer Science Final Year Project
 
-    **Model:** ResNet50 pretrained on ImageNet, fine-tuned on APTOS 2019 Blindness Detection dataset
+#     **Model:** ResNet50 pretrained on ImageNet, fine-tuned on APTOS 2019 Blindness Detection dataset
 
-    **Dataset:** 3,662 retinal fundus images across 5 DR severity grades (APTOS 2019)
+#     **Dataset:** 3,662 retinal fundus images across 5 DR severity grades (APTOS 2019)
 
-    **Performance:** Quadratic Weighted Kappa of {BEST_KAPPA} on validation set (665 images)
+#     **Performance:** Quadratic Weighted Kappa of {BEST_KAPPA} on validation set (665 images)
 
-    **Pipeline:** Image Quality Assessment → CLAHE Preprocessing → TTA Inference (5 augmentations) → Grad-CAM Explainability
+#     **Pipeline:** Image Quality Assessment → CLAHE Preprocessing → TTA Inference (5 augmentations) → Grad-CAM Explainability
 
-    **GitHub:** https://github.com/Mustorf-7/dr-grading
+#     **GitHub:** https://github.com/Mustorf-7/dr-grading
 
-    **Model Repository:** https://huggingface.co/Mustorf/dr-grading-resnet50
+#     **Model Repository:** https://huggingface.co/Mustorf/dr-grading-resnet50
 
-    *This system is intended for research purposes only and should not be used as a substitute for clinical diagnosis by a qualified ophthalmologist.*
-    """)
+#     *This system is intended for research purposes only and should not be used as a substitute for clinical diagnosis by a qualified ophthalmologist.*
+#     """)
 
 # ── DR Grade Reference (Addition 5) ───────────────────────────────────────
 with st.expander(" DR Severity Grade Reference"):
@@ -221,7 +221,7 @@ st.divider()
 
 # ── File Upload ────────────────────────────────────────────────────────────
 model    = load_model()
-uploaded = st.file_uploader("📤 Upload Fundus Image", type=["png", "jpg", "jpeg"])
+uploaded = st.file_uploader(" Upload Fundus Image", type=["png", "jpg", "jpeg"])
 
 if uploaded:
     pil_img = Image.open(uploaded).convert("RGB")
@@ -304,9 +304,9 @@ if uploaded:
         "In DR, these typically correspond to microaneurysms, haemorrhages, or neovascularisation."
     )
 
-    st.divider()
-    st.caption(
-        f"Model: ResNet50 | TTA: 5 augmentations | "
-        f"Best Val Kappa: {BEST_KAPPA} | Dataset: APTOS 2019 | "
-        f"Developer: Mustapha Fetuga"
-    )
+    # st.divider()
+    # st.caption(
+    #     f"Model: ResNet50 | TTA: 5 augmentations | "
+    #     f"Best Val Kappa: {BEST_KAPPA} | Dataset: APTOS 2019 | "
+    #     f"Developer: Mustapha Fetuga"
+    # )
