@@ -15,7 +15,7 @@ MEAN        = [0.485, 0.456, 0.406]
 STD         = [0.229, 0.224, 0.225]
 IMG_SIZE    = 224
 THRESHOLD   = 5.5
-BEST_KAPPA  = 0.8364
+BEST_KAPPA  = 0.8512
 
 GRADE_INFO = {
     0: {"label": "No DR",         "color": "#2ecc71", "action": "Routine screening in 12 months"},
@@ -36,7 +36,7 @@ GRADE_REFERENCE = {
     ],
     "Recommended Action": [
         "Routine screening in 12 months",
-        "Follow-up in 6–12 months",
+        "Follow-up in 6-12 months",
         "Refer to ophthalmologist",
         "Urgent referral required",
         "Immediate specialist intervention",
@@ -161,47 +161,48 @@ st.title("👁️ Automated Diabetic Retinopathy Grading")
 st.markdown(
     "Upload a **retinal fundus image** to obtain an automated assessment of "
     "Diabetic Retinopathy progression, supported by Grad-CAM explainability maps. "
+    "*For research use only — not a clinical diagnostic tool.*"
 )
 st.divider()
 
-# ── About Section (Addition 2) ─────────────────────────────────────────────
-# with st.expander(" About This System"):
-#     st.markdown(f"""
-#     **Project:** Automated Grading of Diabetic Retinopathy Severity with Image Quality Assessment using Deep Learning
+# ── About Section ─────────────────────────────────────────────────────────────
+with st.expander(" About This System"):
+    st.markdown(f"""
+    **Project:** Automated Grading of Diabetic Retinopathy Severity with Image Quality Assessment using Deep Learning
 
-#     **Developer:** Mustapha Fetuga — 400L Computer Science Final Year Project
+    **Developer:** Mustapha Fetuga — 400L Computer Science Final Year Project
 
-#     **Model:** ResNet50 pretrained on ImageNet, fine-tuned on APTOS 2019 Blindness Detection dataset
+    **Model:** ResNet50 pretrained on ImageNet, fine-tuned on APTOS 2019 Blindness Detection dataset
 
-#     **Dataset:** 3,662 retinal fundus images across 5 DR severity grades (APTOS 2019)
+    **Dataset:** 3,662 retinal fundus images across 5 DR severity grades (APTOS 2019)
 
-#     **Performance:** Quadratic Weighted Kappa of {BEST_KAPPA} on validation set (665 images)
+    **Performance:** Quadratic Weighted Kappa of {BEST_KAPPA} on validation set (665 images)
 
-#     **Pipeline:** Image Quality Assessment → CLAHE Preprocessing → TTA Inference (5 augmentations) → Grad-CAM Explainability
+    **Pipeline:** Image Quality Assessment → CLAHE Preprocessing → TTA Inference (5 augmentations) → Grad-CAM Explainability
 
-#     **GitHub:** https://github.com/Mustorf-7/dr-grading
+    **GitHub:** https://github.com/Mustorf-7/dr-grading
 
-#     **Model Repository:** https://huggingface.co/Mustorf/dr-grading-resnet50
+    **Model Repository:** https://huggingface.co/Mustorf/dr-grading-resnet50
 
-#     *This system is intended for research purposes only and should not be used as a substitute for clinical diagnosis by a qualified ophthalmologist.*
-#     """)
+    *This system is intended for research purposes only and should not be used as a substitute for clinical diagnosis by a qualified ophthalmologist.*
+    """)
 
-# ── DR Grade Reference (Addition 5) ───────────────────────────────────────
+# ── DR Grade Reference ─────────────────────────────────────────────────────────
 with st.expander(" DR Severity Grade Reference"):
     import pandas as pd
     st.table(pd.DataFrame(GRADE_REFERENCE))
 
-# ── Sample Images (Addition 1) ─────────────────────────────────────────────
+# ── Sample Images ─────────────────────────────────────────────────────────────
 st.subheader(" Sample Images")
 st.markdown("Don't have a fundus image? Download a sample below to test the app.")
 
 sample_cols = st.columns(5)
 sample_files = [
-    ("Grade 0\nNo DR",          "samples/grade0_sample.png"),
-    ("Grade 1\nMild",           "samples/grade1_sample.png"),
-    ("Grade 2\nModerate",       "samples/grade2_sample.png"),
-    ("Grade 3\nSevere",         "samples/grade3_sample.png"),
-    ("Grade 4\nProliferative",  "samples/grade4_sample.png"),
+    ("Grade 0\nNo DR",         "samples/grade0_sample.png"),
+    ("Grade 1\nMild",          "samples/grade1_sample.png"),
+    ("Grade 2\nModerate",      "samples/grade2_sample.png"),
+    ("Grade 3\nSevere",        "samples/grade3_sample.png"),
+    ("Grade 4\nProliferative", "samples/grade4_sample.png"),
 ]
 
 for col, (label, path) in zip(sample_cols, sample_files):
@@ -219,9 +220,9 @@ for col, (label, path) in zip(sample_cols, sample_files):
 
 st.divider()
 
-# ── File Upload ────────────────────────────────────────────────────────────
+# ── File Upload ────────────────────────────────────────────────────────────────
 model    = load_model()
-uploaded = st.file_uploader(" Upload Fundus Image", type=["png", "jpg", "jpeg"])
+uploaded = st.file_uploader("📤 Upload Fundus Image", type=["png", "jpg", "jpeg"])
 
 if uploaded:
     pil_img = Image.open(uploaded).convert("RGB")
@@ -231,7 +232,7 @@ if uploaded:
         st.subheader("Original Image")
         st.image(pil_img, use_container_width=True)
 
-    # ── Quality Check ──────────────────────────────────────────────────────
+    # ── Quality Check ──────────────────────────────────────────────────────────
     quality_ok, quality_score = check_quality(pil_img)
     st.subheader("Pipeline Steps")
     step1, step2, step3 = st.columns(3)
@@ -240,22 +241,22 @@ if uploaded:
 
     if not quality_ok:
         st.error(
-            f" Image rejected: Quality score {quality_score} is below "
+            f"Image rejected: Quality score {quality_score} is below "
             f"threshold {THRESHOLD}. Please upload a sharper fundus image."
         )
         st.stop()
 
-    # ── CLAHE ──────────────────────────────────────────────────────────────
+    # ── CLAHE ─────────────────────────────────────────────────────────────────
     clahe_img = apply_clahe(pil_img)
     step2.metric("② CLAHE", "Applied", delta="Contrast enhanced")
 
-    # ── TTA Inference ──────────────────────────────────────────────────────
+    # ── TTA Inference ─────────────────────────────────────────────────────────
     with st.spinner("Running TTA inference (5 augmentations)..."):
         grade, confidence, all_probs = tta_predict(model, clahe_img)
 
     step3.metric("③ TTA Inference", "Complete", delta="5 augmentations averaged")
 
-    # ── Result ─────────────────────────────────────────────────────────────
+    # ── Result ────────────────────────────────────────────────────────────────
     st.divider()
     info = GRADE_INFO[grade]
     st.markdown(f"""
@@ -268,25 +269,25 @@ if uploaded:
             Confidence: <strong>{confidence:.1%}</strong>
         </p>
         <p style="font-size:16px; margin:0">
-            🏥 <em>{info["action"]}</em>
+             <em>{info["action"]}</em>
         </p>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── Addition 3 — Low Confidence Warning ────────────────────────────────
+    # ── Low Confidence Warning ─────────────────────────────────────────────────
     if confidence < 0.50:
         st.warning(
-            f"⚠️ Low confidence prediction ({confidence:.1%}). "
+            f"Low confidence prediction ({confidence:.1%}). "
             f"This case should be reviewed by a qualified ophthalmologist."
         )
 
-    # ── Probability Distribution ───────────────────────────────────────────
+    # ── Probability Distribution ───────────────────────────────────────────────
     st.subheader("Grade Probability Distribution")
     prob_cols = st.columns(5)
     for i, (col, prob) in enumerate(zip(prob_cols, all_probs)):
         col.metric(f"Grade {i}", f"{prob:.1%}", delta=GRADE_INFO[i]["label"])
 
-    # ── Grad-CAM ───────────────────────────────────────────────────────────
+    # ── Grad-CAM ──────────────────────────────────────────────────────────────
     st.subheader("Grad-CAM Explainability")
     with st.spinner("Generating Grad-CAM heatmap..."):
         cam, overlay = run_gradcam(model, clahe_img, grade)
@@ -300,13 +301,13 @@ if uploaded:
     g3.image(overlay, caption="Overlay", use_container_width=True)
 
     st.caption(
-        "Red regions indicate retinal areas most influential in the model\'s decision. "
+        "Red regions indicate retinal areas most influential in the model's decision. "
         "In DR, these typically correspond to microaneurysms, haemorrhages, or neovascularisation."
     )
 
-    # st.divider()
-    # st.caption(
-    #     f"Model: ResNet50 | TTA: 5 augmentations | "
-    #     f"Best Val Kappa: {BEST_KAPPA} | Dataset: APTOS 2019 | "
-    #     f"Developer: Mustapha Fetuga"
-    # )
+    st.divider()
+    st.caption(
+        f"Model: ResNet50 | TTA: 5 augmentations | "
+        f"Best Val Kappa: {BEST_KAPPA} | Dataset: APTOS 2019 | "
+        f"Developer: Mustapha Fetuga"
+    )
