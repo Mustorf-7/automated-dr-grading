@@ -161,7 +161,7 @@ st.title("👁️ Automated Diabetic Retinopathy Grading")
 st.markdown(
     "Upload a **retinal fundus image** to obtain an automated assessment of "
     "Diabetic Retinopathy progression, supported by Grad-CAM explainability maps. "
-    "*For research use only — not a clinical diagnostic tool.*"
+    # "*For research use only — not a clinical diagnostic tool.*"
 )
 st.divider()
 
@@ -222,7 +222,7 @@ st.divider()
 
 # ── File Upload ────────────────────────────────────────────────────────────────
 model    = load_model()
-uploaded = st.file_uploader("📤 Upload Fundus Image", type=["png", "jpg", "jpeg"])
+uploaded = st.file_uploader(" Upload Fundus Image", type=["png", "jpg", "jpeg"])
 
 if uploaded:
     pil_img = Image.open(uploaded).convert("RGB")
